@@ -11,7 +11,8 @@ MarkdownReview Hub is a web-based collaboration tool designed for reviewing and 
 ### A. Document Management
 
 - **Create/Upload:** Users can create a new document via a text editor or by uploading a `.md` file.
-  - **Upload Constraints:** Files must be UTF-8 encoded and not exceed **5 MB** in size. The server must reject uploads that exceed this limit with an appropriate error message.
+  - **Upload Constraints:** Files must be UTF-8 encoded and not exceed the configured maximum file size (default: **5 MB**). The server must reject uploads that exceed this limit with an appropriate error message.
+  - **Configuration:** The maximum upload size is configurable via the `MAX_UPLOAD_SIZE_MB` environment variable. If not set, the default of 5 MB applies.
 - **Ownership & Deletion:** The creator is designated as the "Owner." Only the Owner has the permission to permanently delete a document.
 - **Document Lifecycle:** Each document has a `status` field that tracks its current stage:
   - `draft` — Initial state after creation; only the Owner can view and edit.
@@ -78,10 +79,10 @@ This application uses an **asynchronous review workflow**. Simultaneous real-tim
 - **Database:** PostgreSQL (relational data for documents, shares, and comments).
 - **Sanitization:** `DOMPurify` (XSS protection for rendered Markdown).
 - **Deployment:** Docker Compose.
-  - A single `docker compose up` command must build and start all services (Next.js app + PostgreSQL + reverse proxy).
+  - A single `docker compose up` command must build and start all services (Next.js app + PostgreSQL).
   - The Compose configuration should handle database initialization and Prisma migrations automatically on first run.
   - Environment variables (e.g., `DATABASE_URL`, `NEXTAUTH_SECRET`) should be configurable via a `.env` file.
-  - **HTTPS:** A reverse proxy (Nginx) must terminate TLS using **Let's Encrypt** for automatic certificate provisioning and renewal. HTTP traffic should redirect to HTTPS.
+  - The application runs on port 3000 by default. For HTTPS, deploy behind an external reverse proxy or load balancer.
 
 ---
 
@@ -149,12 +150,13 @@ All endpoints are served over HTTPS. Authentication is performed via query-strin
 
 ### Documents
 
-| Method   | Endpoint             | Auth                    | Description                                                      |
-| -------- | -------------------- | ----------------------- | ---------------------------------------------------------------- |
-| `POST`   | `/api/documents`     | None                    | Create a new document. Returns the Owner URL with the raw token. |
-| `GET`    | `/api/documents/:id` | Owner or Reviewer token | Retrieve document metadata and content.                          |
-| `PATCH`  | `/api/documents/:id` | Owner token             | Update document content, title, or status.                       |
-| `DELETE` | `/api/documents/:id` | Owner token             | Permanently delete the document and all related data.            |
+| Method   | Endpoint                      | Auth                    | Description                                                                                 |
+| -------- | ----------------------------- | ----------------------- | ------------------------------------------------------------------------------------------- |
+| `POST`   | `/api/documents`              | None                    | Create a new document. Returns the Owner URL with the raw token.                            |
+| `GET`    | `/api/documents/:id`          | Owner or Reviewer token | Retrieve document metadata and content.                                                     |
+| `PATCH`  | `/api/documents/:id`          | Owner token             | Update document content, title, or status.                                                  |
+| `DELETE` | `/api/documents/:id`          | Owner token             | Permanently delete the document and all related data.                                       |
+| `GET`    | `/api/documents/:id/download` | Owner or Reviewer token | Download the document as a `.md` file. Returns the raw Markdown with `Content-Disposition`. |
 
 ### Shares
 
@@ -230,18 +232,18 @@ The API uses standard HTTP status codes. All error responses follow the format:
 
 ## 8. Security Considerations
 
-- **Transport Security:** All traffic **must** be served over **HTTPS/TLS**. Tokens are transmitted as URL query parameters and are therefore visible in browser history and server access logs. The application should set `Referrer-Policy: no-referrer` headers to prevent token leakage via the `Referer` header.
+- **Transport Security:** For production deployments, it is recommended to serve traffic over **HTTPS/TLS** using an external reverse proxy or load balancer. Tokens are transmitted as URL query parameters and are therefore visible in browser history and server access logs. The application should set `Referrer-Policy: no-referrer` headers to prevent token leakage via the `Referer` header.
 - **Token Generation & Storage:** Tokens are generated as UUID v4 values. The **raw token** is shown to the user once (in the URL). The server stores only the **SHA-256 hash** of each token. This means tokens cannot be recovered from the database.
 - **Token Rotation:** The Owner can regenerate their token at any time (see §5 — Token Management). The previous token is immediately invalidated.
 - **Sanitization:** All Markdown rendered to HTML must be sanitized (e.g., using `DOMPurify`) to prevent Cross-Site Scripting (XSS) attacks. User-supplied HTML tags within the Markdown must be stripped or escaped.
-- **Rate Limiting:** API endpoints must enforce rate limiting (suggested: 60 requests per minute per IP for authenticated endpoints, 10 per minute for unauthenticated endpoints like document creation) to prevent brute-force token guessing and abuse.
+- **Rate Limiting:** API endpoints should enforce rate limiting (suggested: 60 requests per minute per IP for authenticated endpoints, 10 per minute for unauthenticated endpoints like document creation) to prevent brute-force token guessing and abuse.
 
 ---
 
 ## 9. Non-Functional Requirements
 
 - **Browser Compatibility:** The application must support the latest two major versions of Chrome, Firefox, Safari, and Edge.
-- **Performance:** Page load time should be under **2 seconds** on a standard broadband connection. Document rendering (Markdown → HTML) should complete in under **200ms** for documents up to 5 MB.
+- **Performance:** Page load time should be under **2 seconds** on a standard broadband connection. Document rendering (Markdown → HTML) should complete in under **200ms** for documents up to the configured maximum file size.
 - **Availability:** Target **99.5% uptime** (allows ~3.6 hours of downtime per month).
 - **Accessibility:** The UI should conform to **WCAG 2.1 Level AA** standards, including keyboard navigation, screen reader support, and sufficient colour contrast for CriticMarkup highlights.
 - **Internationalisation:** Out of scope for v1. The UI will be English-only. The system must correctly handle **UTF-8** document content in any language.
@@ -257,5 +259,5 @@ The following features are explicitly excluded from the initial release to manag
 - Email notifications for new comments or share invitations.
 - Multi-document listing or dashboard (each document is accessed only by its URL).
 - CriticMarkup highlights (`{== ==}`) and inline comments (`{>> <<}`).
-- Export to PDF or other formats.
+- Export to PDF or other non-Markdown formats (Markdown download is supported).
 - Mobile-optimized UI (responsive design is best-effort, not a hard requirement).

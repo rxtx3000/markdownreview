@@ -55,9 +55,8 @@ prisma/*.db-journal
 # OS
 Thumbs.db
 
-# Docker
-docker-compose.override.yml
-
 # Logs
 logs
 *.log
+
+/src/generated/prisma

@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum DocumentStatus {
+  draft
+  in_review
+  finalized
+}
+
+enum SharePermission {
+  view_only
+  suggest_changes
+}
+
+enum CommentStatus {
+  open
+  resolved
+}
+
+// Models
+model Document {
+  id              String    @id @default(uuid()) @db.Uuid
+  title           String
+  contentRaw      String    @default("") @map("content_raw") @db.Text
+  ownerTokenHash  String    @map("owner_token_hash")
+  status          DocumentStatus @default(draft)
+  lockedBy        String?   @map("locked_by")
+  lockExpiresAt   DateTime? @map("lock_expires_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  shares          Share[]
+  comments        Comment[]
+  versions        DocumentVersion[]
+
+  @@map("documents")
+}
+
+model Share {
+  id              String    @id @default(uuid()) @db.Uuid
+  docId           String    @map("doc_id") @db.Uuid
+  reviewerName    String    @map("reviewer_name")
+  inviteTokenHash String    @map("invite_token_hash")
+  permissions     SharePermission @default(suggest_changes)
+  isActive        Boolean   @default(true) @map("is_active")
+  expiresAt       DateTime? @map("expires_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  document        Document  @relation(fields: [docId], references: [id], onDelete: Cascade)
+  comments        Comment[]
+
+  @@map("shares")
+}
+
+model Comment {
+  id           String    @id @default(uuid()) @db.Uuid
+  docId        String    @map("doc_id") @db.Uuid
+  shareId      String?   @map("share_id") @db.Uuid
+  authorName   String    @map("author_name")
+  textAnchor   Json      @map("text_anchor")
+  commentBody  String    @map("comment_body") @db.Text
+  status       CommentStatus @default(open)
+  resolvedAt   DateTime? @map("resolved_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  document     Document  @relation(fields: [docId], references: [id], onDelete: Cascade)
+  share        Share?    @relation(fields: [shareId], references: [id], onDelete: SetNull)
+
+  @@map("comments")
+}
+
+model DocumentVersion {
+  id              String   @id @default(uuid()) @db.Uuid
+  docId           String   @map("doc_id") @db.Uuid
+  contentSnapshot String   @map("content_snapshot") @db.Text
+  changeSummary   String?  @map("change_summary")
+  createdBy       String   @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  document        Document @relation(fields: [docId], references: [id], onDelete: Cascade)
+
+  @@map("document_versions")
+}

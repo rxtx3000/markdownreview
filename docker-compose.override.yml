@@ -1,0 +1,17 @@
+services:
+  # Override for local development
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NODE_ENV: development
+
+  # Expose database port for local access (5433 to avoid conflict with local PostgreSQL)
+  db:
+    ports:
+      - '5433:5432'

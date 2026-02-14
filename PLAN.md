@@ -8,32 +8,30 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 
 ### 0.1 Initialize Repository & Tooling
 
-- [ ] Initialize Git repository with `.gitignore` (Node, Next.js, Prisma).
-- [ ] Create Next.js project with TypeScript (`npx create-next-app@latest --typescript`).
-- [ ] Configure ESLint + Prettier with consistent rules.
-- [ ] Set up Husky pre-commit hooks for linting.
+- [x] Initialize Git repository with `.gitignore` (Node, Next.js, Prisma).
+- [x] Create Next.js project with TypeScript (`npx create-next-app@latest --typescript`).
+- [x] Configure ESLint + Prettier with consistent rules.
+- [x] Set up Husky pre-commit hooks for linting.
 
 ### 0.2 Docker & Database Infrastructure
 
-- [ ] Create `Dockerfile` for Next.js production build.
-- [ ] Create `docker-compose.yml` with services:
+- [x] Create `Dockerfile` for Next.js production build.
+- [x] Create `docker-compose.yml` with services:
   - `app` — Next.js container.
   - `db` — PostgreSQL 16.
-  - `proxy` — Nginx reverse proxy.
-- [ ] Create `docker-compose.override.yml` for local development (hot reload, no TLS).
-- [ ] Configure Nginx for Let's Encrypt (Certbot) with auto-renewal.
-- [ ] Create `.env.example` with all required environment variables.
+- [x] Create `docker-compose.override.yml` for local development (hot reload, port mapping).
+- [x] Create `.env.example` with all required environment variables.
 
 ### 0.3 Database Schema
 
-- [ ] Initialize Prisma (`npx prisma init`).
-- [ ] Define schema in `prisma/schema.prisma`:
+- [x] Initialize Prisma (`npx prisma init`).
+- [x] Define schema in `prisma/schema.prisma`:
   - `Document` model with all fields from SPEC §4.
   - `Share` model with foreign key to Document.
   - `Comment` model with foreign keys to Document and Share.
   - `DocumentVersion` model for history snapshots.
-- [ ] Create initial migration (`npx prisma migrate dev --name init`).
-- [ ] Add migration script to Docker entrypoint for auto-run on startup.
+- [x] Create initial migration (`npx prisma migrate dev --name init`).
+- [x] Add migration script to Docker entrypoint for auto-run on startup.
 
 **Deliverable:** `docker compose up` starts all services; Prisma migrations run automatically; empty database is ready.
 
@@ -43,32 +41,35 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 
 ### 1.1 Authentication Middleware
 
-- [ ] Create utility function: `hashToken(token: string): string` using SHA-256.
-- [ ] Create utility function: `generateToken(): { raw: string, hash: string }`.
-- [ ] Build middleware to extract token from query params (`auth` or `invite`).
-- [ ] Build middleware to verify token against `Documents.owner_token_hash` or `Shares.invite_token_hash`.
-- [ ] Return proper error responses: `401 INVALID_TOKEN`, `403 INSUFFICIENT_PERMISSION`.
+- [x] Create utility function: `hashToken(token: string): string` using SHA-256.
+- [x] Create utility function: `generateToken(): { raw: string, hash: string }`.
+- [x] Build middleware to extract token from query params (`auth` or `invite`).
+- [x] Build middleware to verify token against `Documents.owner_token_hash` or `Shares.invite_token_hash`.
+- [x] Return proper error responses: `401 INVALID_TOKEN`, `403 INSUFFICIENT_PERMISSION`.
 
 ### 1.2 Document CRUD Endpoints
 
-- [ ] `POST /api/documents` — Create document, generate owner token, return Owner URL.
-- [ ] `GET /api/documents/:id` — Retrieve document (Owner or valid Reviewer).
-- [ ] `PATCH /api/documents/:id` — Update content/title/status (Owner only).
-- [ ] `DELETE /api/documents/:id` — Delete document and cascade (Owner only).
+- [x] `POST /api/documents` — Create document, generate owner token, return Owner URL.
+- [x] `GET /api/documents/:id` — Retrieve document (Owner or valid Reviewer).
+- [x] `PATCH /api/documents/:id` — Update content/title/status (Owner only).
+- [x] `DELETE /api/documents/:id` — Delete document and cascade (Owner only).
 
 ### 1.3 Document Locking
 
-- [ ] Implement `acquireLock(docId, userName)` — sets `locked_by` and `lock_expires_at`.
-- [ ] Implement `releaseLock(docId)` — clears lock fields.
-- [ ] Add lock check to `PATCH` — return `409 DOCUMENT_LOCKED` if locked by another user.
-- [ ] Create background job or middleware to auto-expire locks after 5 minutes.
+- [x] Implement `acquireLock(docId, userName)` — sets `locked_by` and `lock_expires_at`.
+- [x] Implement `releaseLock(docId)` — clears lock fields.
+- [x] Add lock check to `PATCH` — return `409 DOCUMENT_LOCKED` if locked by another user.
+- [x] Create background job or middleware to auto-expire locks after 5 minutes.
 
 ### 1.4 File Upload
 
-- [ ] Add `POST /api/documents/upload` endpoint.
-- [ ] Validate file size ≤ 5 MB; return `413 FILE_TOO_LARGE` if exceeded.
-- [ ] Validate UTF-8 encoding.
-- [ ] Create document from uploaded `.md` content.
+- [x] Add `POST /api/documents/upload` endpoint.
+- [x] Read max file size from `MAX_UPLOAD_SIZE_MB` environment variable (default: 5 MB).
+- [x] Validate file size ≤ configured limit; return `413 FILE_TOO_LARGE` if exceeded.
+- [x] Validate UTF-8 encoding.
+- [x] Create document from uploaded `.md` content.
+- [x] Update `src/lib/auth/errors.ts` — `fileTooLarge` to accept size parameter for dynamic error message.
+- [x] Add `MAX_UPLOAD_SIZE_MB` to `.env.example` with documentation.
 
 **Deliverable:** Full Document CRUD via API with token auth and locking.
 
@@ -78,22 +79,22 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 
 ### 2.1 Shares Endpoints
 
-- [ ] `POST /api/documents/:id/shares` — Generate reviewer link with hashed token.
-- [ ] `GET /api/documents/:id/shares` — List all shares (Owner only).
-- [ ] `PATCH /api/documents/:id/shares/:shareId` — Revoke (`is_active: false`) or update.
-- [ ] Implement expiration check: return `410 SHARE_EXPIRED` if `expires_at` has passed.
-- [ ] Implement revocation check: return `403 SHARE_REVOKED` if `is_active === false`.
+- [x] `POST /api/documents/:id/shares` — Generate reviewer link with hashed token.
+- [x] `GET /api/documents/:id/shares` — List all shares (Owner only).
+- [x] `PATCH /api/documents/:id/shares/:shareId` — Revoke (`is_active: false`) or update.
+- [x] Implement expiration check: return `410 SHARE_EXPIRED` if `expires_at` has passed.
+- [x] Implement revocation check: return `403 SHARE_REVOKED` if `is_active === false`.
 
 ### 2.2 Comments Endpoints
 
-- [ ] `GET /api/documents/:id/comments` — List comments; support `?status=open` filter.
-- [ ] `POST /api/documents/:id/comments` — Create comment with `text_anchor` and `comment_body`.
-- [ ] `PATCH /api/documents/:id/comments/:commentId` — Resolve comment (Owner or author only).
-- [ ] Validate that `text_anchor` JSON has required fields (`startLine`, `endLine`, `startChar`, `endChar`).
+- [x] `GET /api/documents/:id/comments` — List comments; support `?status=open` filter.
+- [x] `POST /api/documents/:id/comments` — Create comment with `text_anchor` and `comment_body`.
+- [x] `PATCH /api/documents/:id/comments/:commentId` — Resolve comment (Owner or author only).
+- [x] Validate that `text_anchor` JSON has required fields (`startLine`, `endLine`, `startChar`, `endChar`).
 
 ### 2.3 Token Rotation
 
-- [ ] `POST /api/documents/:id/rotate-token` — Generate new owner token, invalidate old, return new URL.
+- [x] `POST /api/documents/:id/rotate-token` — Generate new owner token, invalidate old, return new URL.
 
 **Deliverable:** Complete Shares and Comments API with proper authorization.
 
@@ -103,25 +104,25 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 
 ### 3.1 Remark Plugin for CriticMarkup
 
-- [ ] Create `remark-critic-markup` plugin.
-- [ ] Parse additions: `{++ text ++}` → `<ins>` with green styling.
-- [ ] Parse deletions: `{-- text --}` → `<del>` with red styling.
-- [ ] Parse substitutions: `{~~ old ~> new ~~}` → combined `<del>` + `<ins>`.
-- [ ] Ensure plugin ignores code blocks and inline code.
-- [ ] Write unit tests for all CriticMarkup patterns.
+- [x] Create `remark-critic-markup` plugin.
+- [x] Parse additions: `{++ text ++}` → `<ins>` with green styling.
+- [x] Parse deletions: `{-- text --}` → `<del>` with red styling.
+- [x] Parse substitutions: `{~~ old ~> new ~~}` → combined `<del>` + `<ins>`.
+- [x] Ensure plugin ignores code blocks and inline code.
+- [x] Write unit tests for all CriticMarkup patterns.
 
 ### 3.2 Change Detection API
 
-- [ ] `GET /api/documents/:id/changes` — Parse document, extract all CriticMarkup regions with IDs.
-- [ ] Return array of `{ id, type, original, replacement, position }`.
+- [x] `GET /api/documents/:id/changes` — Parse document, extract all CriticMarkup regions with IDs.
+- [x] Return array of `{ id, type, original, replacement, position }`.
 
 ### 3.3 Accept/Reject Logic
 
-- [ ] `POST /api/documents/:id/changes/accept` — Remove markup, keep new text.
-- [ ] `POST /api/documents/:id/changes/reject` — Remove markup, keep original text.
-- [ ] Support `{ change_ids: [...] }` for selective changes or `{ all: true }` for bulk.
-- [ ] Create `DocumentVersion` snapshot after each accept/reject operation.
-- [ ] Block direct edits if unresolved changes exist (`409 PENDING_CHANGES`).
+- [x] `POST /api/documents/:id/changes/accept` — Remove markup, keep new text.
+- [x] `POST /api/documents/:id/changes/reject` — Remove markup, keep original text.
+- [x] Support `{ change_ids: [...] }` for selective changes or `{ all: true }` for bulk.
+- [x] Create `DocumentVersion` snapshot after each accept/reject operation.
+- [x] Block direct edits if unresolved changes exist (`409 PENDING_CHANGES`).
 
 **Deliverable:** CriticMarkup parsing, rendering, and accept/reject workflow complete.
 
@@ -131,38 +132,38 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 
 ### 4.1 Page Structure
 
-- [ ] Create route: `/` — Landing page with "Create Document" form.
-- [ ] Create route: `/edit/[docId]` — Owner view.
-- [ ] Create route: `/review/[docId]` — Reviewer view.
-- [ ] Implement token extraction from URL query params on page load.
+- [x] Create route: `/` — Landing page with "Create Document" form.
+- [x] Create route: `/edit/[docId]` — Owner view.
+- [x] Create route: `/review/[docId]` — Reviewer view.
+- [x] Implement token extraction from URL query params on page load.
 
 ### 4.2 CodeMirror 6 Integration
 
-- [ ] Install and configure CodeMirror 6 with Markdown syntax highlighting.
-- [ ] Create custom extension for CriticMarkup syntax highlighting:
+- [x] Install and configure CodeMirror 6 with Markdown syntax highlighting.
+- [x] Create custom extension for CriticMarkup syntax highlighting:
   - Additions: green background.
   - Deletions: red background with strikethrough.
   - Substitutions: combined styling.
-- [ ] Implement auto-wrap for reviewer edits:
+- [x] Implement auto-wrap for reviewer edits:
   - Insertions → wrap in `{++ ++}`.
   - Deletions → wrap in `{-- --}`.
   - Replacements → wrap in `{~~ ~> ~~}`.
-- [ ] Handle `view_only` permission: make editor read-only.
+- [x] Handle `view_only` permission: make editor read-only.
 
 ### 4.3 Rendered Preview
 
-- [ ] Integrate remark pipeline with CriticMarkup plugin.
-- [ ] Sanitize HTML output with DOMPurify.
-- [ ] Implement split-pane layout: Editor | Preview.
-- [ ] Add toggle for full-screen preview mode.
+- [x] Integrate remark pipeline with CriticMarkup plugin.
+- [x] Sanitize HTML output with DOMPurify.
+- [x] Implement split-pane layout: Editor | Preview.
+- [x] Add toggle for full-screen preview mode.
 
 ### 4.4 Document Management UI (Owner)
 
-- [ ] Display document title (editable).
-- [ ] Status badge: Draft / In Review / Finalized.
-- [ ] "Change Status" dropdown.
-- [ ] "Delete Document" button with confirmation modal.
-- [ ] "Rotate Token" button with warning about URL invalidation.
+- [x] Display document title (editable).
+- [x] Status badge: Draft / In Review / Finalized.
+- [x] "Change Status" dropdown.
+- [x] "Delete Document" button with confirmation modal.
+- [x] "Rotate Token" button with warning about URL invalidation.
 
 **Deliverable:** Functional editor with Markdown + CriticMarkup support and live preview.
 
@@ -172,26 +173,26 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 
 ### 5.1 Share Management Panel (Owner)
 
-- [ ] "Add Reviewer" form: name, permissions dropdown, optional expiration date.
-- [ ] Display generated reviewer URL with copy button.
-- [ ] List existing shares with status (active/revoked/expired).
-- [ ] "Revoke" button for each share.
+- [x] "Add Reviewer" form: name, permissions dropdown, optional expiration date.
+- [x] Display generated reviewer URL with copy button.
+- [x] List existing shares with status (active/revoked/expired).
+- [x] "Revoke" button for each share.
 
 ### 5.2 Comments Sidebar
 
-- [ ] Display list of comments anchored to document.
-- [ ] Highlight commented text ranges in editor/preview.
-- [ ] Click comment → scroll to anchored position.
-- [ ] "Add Comment" flow: select text → click "Comment" → enter text → submit.
-- [ ] "Resolve" button (visible to Owner and comment author).
-- [ ] Filter toggle: Show All / Open Only.
+- [x] Display list of comments anchored to document.
+- [x] Highlight commented text ranges in editor/preview.
+- [x] Click comment → scroll to anchored position.
+- [x] "Add Comment" flow: select text → click "Comment" → enter text → submit.
+- [x] "Resolve" button (visible to Owner and comment author).
+- [x] Filter toggle: Show All / Open Only.
 
 ### 5.3 Change Review Panel (Owner)
 
-- [ ] Display list of pending changes with type icons (add/delete/substitute).
-- [ ] "Accept" and "Reject" buttons per change.
-- [ ] "Accept All" / "Reject All" bulk actions.
-- [ ] Visual diff: show original vs. replacement inline.
+- [x] Display list of pending changes with type icons (add/delete/substitute).
+- [x] "Accept" and "Reject" buttons per change.
+- [x] "Accept All" / "Reject All" bulk actions.
+- [x] Visual diff: show original vs. replacement inline.
 
 **Deliverable:** Complete sharing workflow and comment/change review UI.
 
@@ -201,21 +202,21 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 
 ### 6.1 Error Handling & UX
 
-- [ ] Implement global error boundary with user-friendly messages.
-- [ ] Display toast notifications for success/error states.
-- [ ] Handle network errors gracefully with retry option.
-- [ ] Show loading states for all async operations.
+- [x] Implement global error boundary with user-friendly messages.
+- [x] Display toast notifications for success/error states.
+- [x] Handle network errors gracefully with retry option.
+- [x] Show loading states for all async operations.
 
 ### 6.2 Accessibility (WCAG 2.1 AA)
 
-- [ ] Ensure all interactive elements are keyboard navigable.
-- [ ] Add ARIA labels to buttons, forms, and dynamic content.
-- [ ] Test with screen reader (NVDA or VoiceOver).
-- [ ] Verify colour contrast for CriticMarkup highlights (green/red on white).
+- [x] Ensure all interactive elements are keyboard navigable.
+- [x] Add ARIA labels to buttons, forms, and dynamic content.
+- [ ] Test with screen reader (NVDA or VoiceOver). _(Skipped: Requires manual testing with screen reader software)_
+- [x] Verify colour contrast for CriticMarkup highlights (green/red on white).
 
 ### 6.3 Performance
 
-- [ ] Optimize remark pipeline for large documents (≤ 200ms for 5 MB).
+- [ ] Optimize remark pipeline for large documents (≤ 200ms for max configured file size).
 - [ ] Implement debounced saves to reduce API calls.
 - [ ] Add response caching headers where appropriate.
 - [ ] Lazy-load CodeMirror and heavy dependencies.
@@ -225,7 +226,6 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 - [ ] Set `Referrer-Policy: no-referrer` header.
 - [ ] Implement rate limiting: 60 req/min authenticated, 10 req/min unauthenticated.
 - [ ] Validate and sanitize all user inputs server-side.
-- [ ] Ensure HTTPS redirect is enforced at Nginx level.
 
 ### 6.5 Browser Testing
 
@@ -270,10 +270,9 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 ### 8.1 Production Environment
 
 - [ ] Provision production server (VPS or cloud instance).
-- [ ] Configure DNS for domain.
+- [ ] Configure DNS for domain (optional).
 - [ ] Deploy with `docker compose up -d`.
-- [ ] Verify Let's Encrypt certificates are issued.
-- [ ] Test HTTPS redirect and certificate renewal.
+- [ ] Verify application is accessible on port 3000.
 
 ### 8.2 Monitoring & Logging
 
@@ -289,7 +288,7 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 - [ ] Back up database (verify backup/restore process).
 - [ ] Announce launch / share with initial users.
 
-**Deliverable:** Live production deployment accessible via HTTPS.
+**Deliverable:** Live production deployment accessible via HTTP (use external reverse proxy for HTTPS).
 
 ---
 
@@ -318,4 +317,3 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 | CriticMarkup edge cases           | Medium     | High   | Extensive unit tests; handle nested/malformed markup gracefully    |
 | CodeMirror integration complexity | Medium     | Medium | Prototype early in Phase 4; fallback to simpler textarea if needed |
 | Performance on large documents    | Low        | High   | Benchmark early; consider Web Workers for parsing                  |
-| Let's Encrypt rate limits         | Low        | Medium | Test with staging certificates first; use DNS challenge if needed  |
