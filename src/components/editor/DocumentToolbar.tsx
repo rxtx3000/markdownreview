@@ -25,6 +25,7 @@ interface DocumentToolbarProps {
   onOpenShares?: () => void
   onOpenComments?: () => void
   onOpenChanges?: () => void
+  onOpenHistory?: () => void
 }
 
 export default function DocumentToolbar({
@@ -47,6 +48,7 @@ export default function DocumentToolbar({
   onOpenShares,
   onOpenComments,
   onOpenChanges,
+  onOpenHistory,
 }: DocumentToolbarProps) {
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState(title)
@@ -336,6 +338,17 @@ export default function DocumentToolbar({
                   </div>
                 )}
               </div>
+            )}
+
+            {/* History button (both roles) */}
+            {onOpenHistory && (
+              <button
+                onClick={onOpenHistory}
+                className="px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] border border-[var(--border)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
+                aria-label="Open version history"
+              >
+                <span aria-hidden="true">🕰️</span> History
+              </button>
             )}
 
             {/* Comments button (both roles) */}

@@ -10,6 +10,7 @@ services:
       - /app/.next
     environment:
       NODE_ENV: development
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run dev"
 
   # Expose database port for local access (5433 to avoid conflict with local PostgreSQL)
   db:

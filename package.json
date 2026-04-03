@@ -25,6 +25,7 @@
     "@lezer/highlight": "^1.2.3",
     "@prisma/client": "^6.19.2",
     "codemirror": "^6.0.2",
+    "diff": "^8.0.4",
     "isomorphic-dompurify": "^3.0.0-rc.2",
     "next": "^15.1.6",
     "puppeteer": "^24.37.2",
@@ -40,6 +41,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
+    "@types/diff": "^8.0.0",
     "@types/mdast": "^4.0.4",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.6",

@@ -2,8 +2,9 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider      = "prisma-client"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -83,6 +84,7 @@ model Comment {
 model DocumentVersion {
   id              String   @id @default(uuid()) @db.Uuid
   docId           String   @map("doc_id") @db.Uuid
+  versionNumber   Int      @map("version_number")
   contentSnapshot String   @map("content_snapshot") @db.Text
   changeSummary   String?  @map("change_summary")
   createdBy       String   @map("created_by")

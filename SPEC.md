@@ -68,6 +68,15 @@ This application uses an **asynchronous review workflow**. Simultaneous real-tim
 - **Pessimistic Locking:** When a user (Owner or reviewer) begins editing, the server acquires a document-level lock. If another user attempts to edit concurrently, they receive a `409 Conflict` response indicating the document is currently being edited, along with the name of the active editor.
 - **Lock Timeout:** Locks automatically expire after **5 minutes** of inactivity to prevent orphaned locks.
 
+### E. Version History & Comparison
+
+- **Comprehensive Versioning:** A new version snapshot is created upon every save. The application keeps all versions of the document indefinitely.
+- **Change Highlighting:** When viewing a version, the UI must intelligently highlight the textual changes (diff) from the previous versions.
+- **Comment Retention:** Comments are preserved across document saves. When viewing a past version, all comments present at that time remain accessible.
+- **Specific Version View:** The UI provides a version history panel where users can select and open a specific version. Each version displays its sequential **version number** and the **saved date**.
+- **Side-by-Side Comparison:** Users can open two different versions side-by-side to visually compare them. The interface highlights differences between the two selected versions.
+- **Reviewer Access:** Reviewers (including those with \`view_only\` permission) can also view the version history and compare versions.
+
 ---
 
 ## 3. Technical Stack
@@ -135,12 +144,13 @@ This application uses an **asynchronous review workflow**. Simultaneous real-tim
 | ------------------ | --------- | ------------------------------------ | ------------------------------------------------------------ |
 | `id`               | UUID      | Primary Key                          | Unique version identifier                                    |
 | `doc_id`           | UUID      | Foreign Key → Documents.id, NOT NULL | The document this version belongs to                         |
+| `version_number`   | Integer   | NOT NULL                             | Sequential version number (e.g., 1, 2, 3...)                 |
 | `content_snapshot` | Text      | NOT NULL                             | Full copy of `content_raw` at the time of the snapshot       |
 | `change_summary`   | String    | NULLABLE                             | Human-readable label (e.g., "Accepted 3 changes from Alice") |
 | `created_by`       | String    | NOT NULL                             | Name of the user who triggered this snapshot                 |
-| `created_at`       | Timestamp | NOT NULL, DEFAULT `NOW()`            | When the snapshot was taken                                  |
+| `created_at`       | Timestamp | NOT NULL, DEFAULT `NOW()`            | When the snapshot was taken (saved date)                     |
 
-> **Versioning Policy:** A new version snapshot is created automatically each time the Owner **accepts or rejects** CriticMarkup changes, or when the Owner **manually saves** after a direct edit session. Snapshots are retained indefinitely in v1.
+> **Versioning Policy:** A new version snapshot is created automatically each time the Owner **accepts or rejects** CriticMarkup changes, or when the Owner **manually saves** after a direct edit session. Snapshots are retained indefinitely, and each tracks its sequential version number and saved date.
 
 ---
 
@@ -150,13 +160,15 @@ All endpoints are served over HTTPS. Authentication is performed via query-strin
 
 ### Documents
 
-| Method   | Endpoint                      | Auth                    | Description                                                                                 |
-| -------- | ----------------------------- | ----------------------- | ------------------------------------------------------------------------------------------- |
-| `POST`   | `/api/documents`              | None                    | Create a new document. Returns the Owner URL with the raw token.                            |
-| `GET`    | `/api/documents/:id`          | Owner or Reviewer token | Retrieve document metadata and content.                                                     |
-| `PATCH`  | `/api/documents/:id`          | Owner token             | Update document content, title, or status.                                                  |
-| `DELETE` | `/api/documents/:id`          | Owner token             | Permanently delete the document and all related data.                                       |
-| `GET`    | `/api/documents/:id/download` | Owner or Reviewer token | Download the document as a `.md` file. Returns the raw Markdown with `Content-Disposition`. |
+| Method   | Endpoint                                      | Auth                    | Description                                                                                 |
+| -------- | --------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------- |
+| `POST`   | `/api/documents`                              | None                    | Create a new document. Returns the Owner URL with the raw token.                            |
+| `GET`    | `/api/documents/:id`                          | Owner or Reviewer token | Retrieve document metadata and content.                                                     |
+| `PATCH`  | `/api/documents/:id`                          | Owner token             | Update document content, title, or status.                                                  |
+| `DELETE` | `/api/documents/:id`                          | Owner token             | Permanently delete the document and all related data.                                       |
+| `GET`    | `/api/documents/:id/download`                 | Owner or Reviewer token | Download the document as a `.md` file. Returns the raw Markdown with `Content-Disposition`. |
+| `GET`    | `/api/documents/:id/versions`                 | Owner or Reviewer token | List all saved versions of the document (metadata like version number and date).            |
+| `GET`    | `/api/documents/:id/versions/:version_number` | Owner or Reviewer token | Retrieve a specific document version and its associated comments.                           |
 
 ### Shares
 

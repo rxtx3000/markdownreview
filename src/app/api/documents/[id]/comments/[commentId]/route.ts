@@ -48,7 +48,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Check if reviewer can access draft document
     if (document.status === 'draft' && auth.role === UserRole.REVIEWER) {
-      throw AuthErrors.insufficientPermission()
+      throw AuthErrors.documentNotInReview()
     }
 
     // Check if comment exists and belongs to this document

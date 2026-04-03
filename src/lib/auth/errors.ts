@@ -61,6 +61,13 @@ export const AuthErrors = {
       403
     ),
 
+  documentNotInReview: () =>
+    new AuthError(
+      AuthErrorCode.INSUFFICIENT_PERMISSION,
+      'Currently the document is not in review state.',
+      403
+    ),
+
   documentNotFound: () =>
     new AuthError(
       AuthErrorCode.DOCUMENT_NOT_FOUND,

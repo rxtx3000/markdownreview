@@ -198,36 +198,56 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 
 ---
 
-## Phase 6: Polish & Non-Functional Requirements (Days 24–28)
+## Phase 6: Version History & Comparison (Days 24–27)
 
-### 6.1 Error Handling & UX
+### 6.1 Version API & Tracking
+
+- [ ] `GET /api/documents/:id/versions` — List all versions with metadata (number, date, summary).
+- [ ] `GET /api/documents/:id/versions/:version_number` — Retrieve specific version content and active comments.
+- [ ] Ensure automatic snapshot creation on manual saves and change approvals increments `version_number`.
+
+### 6.2 Version History UI
+
+- [ ] Create "Version History" panel to list, select and browse previous versions.
+- [ ] Render specific old versions in read-only state, correctly displaying past comments.
+
+### 6.3 Side-by-Side Comparison & Diffing
+
+- [ ] Implement text diffing utility to detect and highlight changes from the anterior version.
+- [ ] Build dual-pane view to load and visually compare any two arbitrary versions side-by-side.
+
+---
+
+## Phase 7: Polish & Non-Functional Requirements (Days 28–32)
+
+### 7.1 Error Handling & UX
 
 - [x] Implement global error boundary with user-friendly messages.
 - [x] Display toast notifications for success/error states.
 - [x] Handle network errors gracefully with retry option.
 - [x] Show loading states for all async operations.
 
-### 6.2 Accessibility (WCAG 2.1 AA)
+### 7.2 Accessibility (WCAG 2.1 AA)
 
 - [x] Ensure all interactive elements are keyboard navigable.
 - [x] Add ARIA labels to buttons, forms, and dynamic content.
 - [ ] Test with screen reader (NVDA or VoiceOver). _(Skipped: Requires manual testing with screen reader software)_
 - [x] Verify colour contrast for CriticMarkup highlights (green/red on white).
 
-### 6.3 Performance
+### 7.3 Performance
 
 - [ ] Optimize remark pipeline for large documents (≤ 200ms for max configured file size).
 - [ ] Implement debounced saves to reduce API calls.
 - [ ] Add response caching headers where appropriate.
 - [ ] Lazy-load CodeMirror and heavy dependencies.
 
-### 6.4 Security Hardening
+### 7.4 Security Hardening
 
 - [ ] Set `Referrer-Policy: no-referrer` header.
 - [ ] Implement rate limiting: 60 req/min authenticated, 10 req/min unauthenticated.
 - [ ] Validate and sanitize all user inputs server-side.
 
-### 6.5 Browser Testing
+### 7.5 Browser Testing
 
 - [ ] Test on Chrome (latest 2 versions).
 - [ ] Test on Firefox (latest 2 versions).
@@ -238,9 +258,9 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 
 ---
 
-## Phase 7: Testing & Documentation (Days 29–32)
+## Phase 8: Testing & Documentation (Days 33–36)
 
-### 7.1 Automated Tests
+### 8.1 Automated Tests
 
 - [ ] Unit tests for CriticMarkup parser (Jest/Vitest).
 - [ ] Unit tests for token hashing and validation utilities.
@@ -251,7 +271,7 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
   - Owner accepts/rejects changes.
   - Finalize document.
 
-### 7.2 Documentation
+### 8.2 Documentation
 
 - [ ] Write `README.md` with:
   - Project overview.
@@ -265,23 +285,23 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 
 ---
 
-## Phase 8: Deployment & Launch (Days 33–35)
+## Phase 9: Deployment & Launch (Days 37–39)
 
-### 8.1 Production Environment
+### 9.1 Production Environment
 
 - [ ] Provision production server (VPS or cloud instance).
 - [ ] Configure DNS for domain (optional).
 - [ ] Deploy with `docker compose up -d`.
 - [ ] Verify application is accessible on port 3000.
 
-### 8.2 Monitoring & Logging
+### 9.2 Monitoring & Logging
 
 - [ ] Configure application logging (structured JSON logs).
 - [ ] Set up log aggregation (optional: Loki, ELK, or cloud logging).
 - [ ] Add health check endpoint (`/api/health`).
 - [ ] Configure uptime monitoring (optional: UptimeRobot, Healthchecks.io).
 
-### 8.3 Launch Checklist
+### 9.3 Launch Checklist
 
 - [ ] Verify all SPEC.md requirements are met.
 - [ ] Perform manual smoke test of all features.
@@ -302,11 +322,12 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 | 3     | CriticMarkup Engine           | 4 days   | Day 12     |
 | 4     | Frontend — Editor & Viewer    | 6 days   | Day 18     |
 | 5     | Frontend — Sharing & Comments | 5 days   | Day 23     |
-| 6     | Polish & NFRs                 | 5 days   | Day 28     |
-| 7     | Testing & Documentation       | 4 days   | Day 32     |
-| 8     | Deployment & Launch           | 3 days   | Day 35     |
+| 6     | Version History & Comparison  | 4 days   | Day 27     |
+| 7     | Polish & NFRs                 | 5 days   | Day 32     |
+| 8     | Testing & Documentation       | 4 days   | Day 36     |
+| 9     | Deployment & Launch           | 3 days   | Day 39     |
 
-**Total Estimated Duration: 35 working days (~7 weeks)**
+**Total Estimated Duration: 39 working days (~8 weeks)**
 
 ---
 

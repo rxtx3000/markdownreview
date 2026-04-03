@@ -96,7 +96,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Check if reviewer can access draft document
     if (document.status === 'draft' && auth.role === UserRole.REVIEWER) {
-      throw AuthErrors.insufficientPermission()
+      throw AuthErrors.documentNotInReview()
     }
 
     // Parse status filter from query params
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Check if reviewer can access draft document
     if (document.status === 'draft' && auth.role === UserRole.REVIEWER) {
-      throw AuthErrors.insufficientPermission()
+      throw AuthErrors.documentNotInReview()
     }
 
     // Check if document is finalized

@@ -176,7 +176,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Check if document is in draft and user is a reviewer (not allowed)
     if (document.status === 'draft' && auth.role === UserRole.REVIEWER) {
-      throw AuthErrors.insufficientPermission()
+      throw AuthErrors.documentNotInReview()
     }
 
     // Sanitize filename: remove/replace characters that are problematic in filenames

@@ -12,6 +12,8 @@ import Toast, { ToastType } from '@/components/ui/Toast'
 import ShareManagementPanel from '@/components/sharing/ShareManagementPanel'
 import CommentsPanel, { TextAnchor } from '@/components/comments/CommentsPanel'
 import ChangeReviewPanel from '@/components/changes/ChangeReviewPanel'
+import VersionHistoryPanel from '@/components/versions/VersionHistoryPanel'
+import VersionComparisonView from '@/components/versions/VersionComparisonView'
 
 export default function EditPage() {
   const params = useParams()
@@ -51,6 +53,13 @@ export default function EditPage() {
   const [selectedCommentAnchor, setSelectedCommentAnchor] = useState<TextAnchor | null>(null)
   const [currentSelection, setCurrentSelection] = useState<SelectionInfo | null>(null)
   const [comments, setComments] = useState<CommentAnchor[]>([])
+
+  // Version Comparison states
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false)
+  const [selectedVersionData, setSelectedVersionData] = useState<{
+    number: number
+    content: string
+  } | null>(null)
 
   const showToast = useCallback((message: string, type: ToastType) => {
     setToast({ message, type })
@@ -221,6 +230,26 @@ export default function EditPage() {
     }
   }, [])
 
+  const handleSelectVersion = useCallback(
+    async (versionNumber: number) => {
+      try {
+        const url = new URL(
+          `/api/documents/${docId}/versions/${versionNumber}`,
+          window.location.origin
+        )
+        url.searchParams.set('auth', token)
+        const res = await fetch(url.toString())
+        if (!res.ok) throw new Error('Failed to load version details')
+        const data = await res.json()
+        setSelectedVersionData({ number: versionNumber, content: data.version.contentSnapshot })
+        setShowHistoryPanel(false) // Close panel after selecting
+      } catch {
+        showToast('Failed to load version content.', 'error')
+      }
+    },
+    [docId, token, showToast]
+  )
+
   // ─── Loading State ──────────────────────────────────────────
 
   if (loading) {
@@ -317,17 +346,28 @@ export default function EditPage() {
         onOpenShares={() => setShowSharesPanel(true)}
         onOpenComments={() => setShowCommentsPanel(true)}
         onOpenChanges={() => setShowChangesPanel(true)}
+        onOpenHistory={() => setShowHistoryPanel(true)}
       />
 
       <div className="flex-1 min-h-0 relative">
-        <EditorLayout
-          ref={editorRef}
-          content={document.content}
-          onContentChange={handleContentChange}
-          onSelectionChange={handleSelectionChange}
-          readOnly={isFinalized}
-          comments={comments}
-        />
+        {selectedVersionData ? (
+          <VersionComparisonView
+            originalTitle={`Version ${selectedVersionData.number}`}
+            originalContent={selectedVersionData.content}
+            newTitle="Current Draft"
+            newContent={document.content}
+            onClose={() => setSelectedVersionData(null)}
+          />
+        ) : (
+          <EditorLayout
+            ref={editorRef}
+            content={document.content}
+            onContentChange={handleContentChange}
+            onSelectionChange={handleSelectionChange}
+            readOnly={isFinalized}
+            comments={comments}
+          />
+        )}
 
         {/* Floating Add Comment Button */}
         {currentSelection &&
@@ -391,6 +431,16 @@ export default function EditPage() {
         isOpen={showChangesPanel}
         onClose={() => setShowChangesPanel(false)}
         onChangesProcessed={handleChangesProcessed}
+      />
+
+      {/* Version History Panel */}
+      <VersionHistoryPanel
+        docId={docId}
+        token={token}
+        isOpen={showHistoryPanel}
+        onClose={() => setShowHistoryPanel(false)}
+        onSelectVersion={handleSelectVersion}
+        currentVersionNumber={selectedVersionData?.number}
       />
 
       {/* Toast */}

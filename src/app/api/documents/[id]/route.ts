@@ -64,7 +64,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Check if document is in draft and user is a reviewer (not allowed)
     if (document.status === 'draft' && auth.role === UserRole.REVIEWER) {
-      throw AuthErrors.insufficientPermission()
+      throw AuthErrors.documentNotInReview()
     }
 
     // Check if lock has expired and clear it
@@ -158,7 +158,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Reviewers can only edit documents that are in_review
     if (isReviewer && document.status !== 'in_review') {
-      throw AuthErrors.insufficientPermission()
+      throw AuthErrors.documentNotInReview()
     }
 
     // Parse request body
@@ -259,7 +259,49 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Update document
+    // If content was modified, create a version snapshot
+    if (body.content !== undefined) {
+      const latestVersion = await prisma.documentVersion.findFirst({
+        where: { docId: id },
+        orderBy: { versionNumber: 'desc' },
+        select: { versionNumber: true },
+      })
+      const versionNumber = latestVersion ? latestVersion.versionNumber + 1 : 1
+
+      const [updatedDocument] = await prisma.$transaction([
+        prisma.document.update({
+          where: { id },
+          data: updateData,
+          select: {
+            id: true,
+            title: true,
+            contentRaw: true,
+            status: true,
+            updatedAt: true,
+          },
+        }),
+        prisma.documentVersion.create({
+          data: {
+            docId: id,
+            versionNumber,
+            contentSnapshot: body.content,
+            changeSummary: 'Manual save',
+            createdBy: userName, // Reused from line 182
+          },
+          select: { id: true },
+        }),
+      ])
+
+      return NextResponse.json({
+        id: updatedDocument.id,
+        title: updatedDocument.title,
+        content: updatedDocument.contentRaw,
+        status: updatedDocument.status,
+        updatedAt: updatedDocument.updatedAt.toISOString(),
+      })
+    }
+
+    // Update document without version snapshot (e.g. status or title only)
     const updatedDocument = await prisma.document.update({
       where: { id },
       data: updateData,

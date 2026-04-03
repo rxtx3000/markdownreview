@@ -107,6 +107,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    const latestVersion = await prisma.documentVersion.findFirst({
+      where: { docId: id },
+      orderBy: { versionNumber: 'desc' },
+      select: { versionNumber: true },
+    })
+    const versionNumber = latestVersion ? latestVersion.versionNumber + 1 : 1
+
     // Update document and create version snapshot in a transaction
     const [updatedDocument, version] = await prisma.$transaction([
       prisma.document.update({
@@ -121,6 +128,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       prisma.documentVersion.create({
         data: {
           docId: id,
+          versionNumber,
           contentSnapshot: result.content,
           changeSummary: result.summary,
           createdBy: 'Owner',

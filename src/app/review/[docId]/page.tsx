@@ -9,6 +9,8 @@ import EditorLayout, { EditorLayoutRef } from '@/components/editor/EditorLayout'
 import type { SelectionInfo, CommentAnchor } from '@/components/editor/CodeMirrorEditor'
 import Toast, { ToastType } from '@/components/ui/Toast'
 import CommentsPanel, { TextAnchor } from '@/components/comments/CommentsPanel'
+import VersionHistoryPanel from '@/components/versions/VersionHistoryPanel'
+import VersionComparisonView from '@/components/versions/VersionComparisonView'
 
 export default function ReviewPage() {
   const params = useParams()
@@ -42,6 +44,13 @@ export default function ReviewPage() {
   const [selectedCommentAnchor, setSelectedCommentAnchor] = useState<TextAnchor | null>(null)
   const [currentSelection, setCurrentSelection] = useState<SelectionInfo | null>(null)
   const [comments, setComments] = useState<CommentAnchor[]>([])
+
+  // Version Comparison states
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false)
+  const [selectedVersionData, setSelectedVersionData] = useState<{
+    number: number
+    content: string
+  } | null>(null)
 
   const showToast = useCallback((message: string, type: ToastType) => {
     setToast({ message, type })
@@ -213,6 +222,26 @@ export default function ReviewPage() {
     }
   }, [])
 
+  const handleSelectVersion = useCallback(
+    async (versionNumber: number) => {
+      try {
+        const url = new URL(
+          `/api/documents/${docId}/versions/${versionNumber}`,
+          window.location.origin
+        )
+        url.searchParams.set('invite', token)
+        const res = await fetch(url.toString())
+        if (!res.ok) throw new Error('Failed to load version details')
+        const data = await res.json()
+        setSelectedVersionData({ number: versionNumber, content: data.version.contentSnapshot })
+        setShowHistoryPanel(false)
+      } catch {
+        showToast('Failed to load version content.', 'error')
+      }
+    },
+    [docId, token, showToast]
+  )
+
   // ─── Loading State ──────────────────────────────────────────
 
   if (loading) {
@@ -311,18 +340,29 @@ export default function ReviewPage() {
         onDownload={handleDownload}
         onToast={showToast}
         onOpenComments={() => setShowCommentsPanel(true)}
+        onOpenHistory={() => setShowHistoryPanel(true)}
       />
 
       <div className="flex-1 min-h-0 relative">
-        <EditorLayout
-          ref={editorRef}
-          content={localContent ?? document.content}
-          onContentChange={canSuggestChanges ? handleContentChange : undefined}
-          onSelectionChange={handleSelectionChange}
-          readOnly={isReadOnly}
-          reviewerMode={canSuggestChanges}
-          comments={comments}
-        />
+        {selectedVersionData ? (
+          <VersionComparisonView
+            originalTitle={`Version ${selectedVersionData.number}`}
+            originalContent={selectedVersionData.content}
+            newTitle="Current Draft"
+            newContent={localContent ?? document.content}
+            onClose={() => setSelectedVersionData(null)}
+          />
+        ) : (
+          <EditorLayout
+            ref={editorRef}
+            content={localContent ?? document.content}
+            onContentChange={canSuggestChanges ? handleContentChange : undefined}
+            onSelectionChange={handleSelectionChange}
+            readOnly={isReadOnly}
+            reviewerMode={canSuggestChanges}
+            comments={comments}
+          />
+        )}
 
         {/* Floating Add Comment Button */}
         {currentSelection &&
@@ -368,6 +408,17 @@ export default function ReviewPage() {
         }}
         onCommentClick={handleCommentClick}
         selectedAnchor={selectedCommentAnchor}
+      />
+
+      {/* Version History Panel */}
+      <VersionHistoryPanel
+        docId={docId}
+        token={token}
+        tokenType="invite"
+        isOpen={showHistoryPanel}
+        onClose={() => setShowHistoryPanel(false)}
+        onSelectVersion={handleSelectVersion}
+        currentVersionNumber={selectedVersionData?.number}
       />
 
       {/* Toast */}
