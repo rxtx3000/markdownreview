@@ -7,6 +7,7 @@
 
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
+import remarkGfm from 'remark-gfm'
 import remarkRehype from 'remark-rehype'
 import rehypeRaw from 'rehype-raw'
 import rehypeStringify from 'rehype-stringify'
@@ -22,6 +23,7 @@ export async function renderMarkdown(markdown: string): Promise<string> {
 
   const result = await unified()
     .use(remarkParse)
+    .use(remarkGfm)
     .use(remarkCriticMarkup)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
@@ -30,14 +32,22 @@ export async function renderMarkdown(markdown: string): Promise<string> {
 
   const html = String(result)
 
+  // Replace mermaid code blocks with placeholder divs that have class-based markers
+  const htmlWithMermaid = html.replace(
+    /<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g,
+    (_match, code) => {
+      return `<div class="mermaid-diagram"><pre class="mermaid-source"><code>${code}</code></pre></div>`
+    }
+  )
+
   // Sanitize on the client side using DOMPurify (imported dynamically)
   if (typeof window !== 'undefined') {
     const DOMPurify = (await import('isomorphic-dompurify')).default
-    return DOMPurify.sanitize(html, {
+    return DOMPurify.sanitize(htmlWithMermaid, {
       ADD_TAGS: ['ins', 'del'],
       ADD_ATTR: ['class'],
     })
   }
 
-  return html
+  return htmlWithMermaid
 }

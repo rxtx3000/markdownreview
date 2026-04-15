@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     // Get the file from the form data
     const file = formData.get('file')
-    if (!file || !(file instanceof File)) {
+    if (!file || typeof file === 'string') {
       return NextResponse.json(
         {
           error: {

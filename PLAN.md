@@ -156,6 +156,8 @@ This document outlines the phased implementation plan for MarkdownReview Hub.
 - [x] Sanitize HTML output with DOMPurify.
 - [x] Implement split-pane layout: Editor | Preview.
 - [x] Add toggle for full-screen preview mode.
+- [x] Add GFM table rendering support via `remark-gfm`.
+- [x] Add Mermaid diagram rendering for ` ```mermaid ` code blocks.
 
 ### 4.4 Document Management UI (Owner)
 

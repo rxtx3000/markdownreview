@@ -3,6 +3,7 @@ import { PrismaClient } from '@/generated/prisma/client'
 import { authenticate, createErrorResponse, AuthErrors, UserRole } from '@/lib/auth'
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
+import remarkGfm from 'remark-gfm'
 import remarkRehype from 'remark-rehype'
 import rehypeRaw from 'rehype-raw'
 import rehypeStringify from 'rehype-stringify'
@@ -22,6 +23,7 @@ async function renderMarkdownToHtml(markdown: string): Promise<string> {
 
   const result = await unified()
     .use(remarkParse)
+    .use(remarkGfm)
     .use(remarkCriticMarkup)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)

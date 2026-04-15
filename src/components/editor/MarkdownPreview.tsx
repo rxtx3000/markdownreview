@@ -1,6 +1,14 @@
 'use client'
 
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react'
+import {
+  useState,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useCallback,
+} from 'react'
 import { renderMarkdown } from '@/lib/markdown-renderer'
 import type { CommentAnchor } from './CodeMirrorEditor'
 
@@ -122,6 +130,41 @@ const MarkdownPreview = forwardRef<MarkdownPreviewRef, MarkdownPreviewProps>(
     const highlightedHtml = useMemo(() => {
       return applyCommentHighlights(html, content, comments)
     }, [html, content, comments])
+
+    // Render Mermaid diagrams after HTML is injected into the DOM
+    const renderMermaidDiagrams = useCallback(async () => {
+      const container = containerRef.current
+      if (!container) return
+
+      const mermaidDivs = container.querySelectorAll<HTMLElement>('.mermaid-diagram')
+      if (mermaidDivs.length === 0) return
+
+      const mermaid = (await import('mermaid')).default
+      mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'strict' })
+
+      for (const div of mermaidDivs) {
+        if (div.classList.contains('mermaid-rendered')) continue
+
+        // Extract the mermaid source from the nested code block text
+        const codeEl = div.querySelector('pre.mermaid-source code')
+        const source = codeEl?.textContent?.trim()
+        if (!source) continue
+
+        try {
+          const id = `mermaid-${Math.random().toString(36).slice(2, 10)}`
+          const { svg } = await mermaid.render(id, source)
+          div.innerHTML = svg
+          div.classList.add('mermaid-rendered')
+        } catch {
+          // Leave the code block as-is on parse error
+          div.classList.add('mermaid-error')
+        }
+      }
+    }, [])
+
+    useEffect(() => {
+      renderMermaidDiagrams()
+    }, [highlightedHtml, renderMermaidDiagrams])
 
     return (
       <div className={`relative ${className}`}>

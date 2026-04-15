@@ -273,6 +273,21 @@ body {
   border-radius: 8px;
 }
 
+.markdown-preview .mermaid-diagram {
+  margin: 1em 0;
+  display: flex;
+  justify-content: center;
+}
+
+.markdown-preview .mermaid-diagram.mermaid-rendered svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown-preview .mermaid-diagram.mermaid-error pre {
+  border-left: 3px solid var(--critic-deletion-text, #dc2626);
+}
+
 /* ============================================================
    CODEMIRROR OVERRIDES
    ============================================================ */
