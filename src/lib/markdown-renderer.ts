@@ -32,22 +32,14 @@ export async function renderMarkdown(markdown: string): Promise<string> {
 
   const html = String(result)
 
-  // Replace mermaid code blocks with placeholder divs that have class-based markers
-  const htmlWithMermaid = html.replace(
-    /<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g,
-    (_match, code) => {
-      return `<div class="mermaid-diagram"><pre class="mermaid-source"><code>${code}</code></pre></div>`
-    }
-  )
-
   // Sanitize on the client side using DOMPurify (imported dynamically)
   if (typeof window !== 'undefined') {
     const DOMPurify = (await import('isomorphic-dompurify')).default
-    return DOMPurify.sanitize(htmlWithMermaid, {
+    return DOMPurify.sanitize(html, {
       ADD_TAGS: ['ins', 'del'],
       ADD_ATTR: ['class'],
     })
   }
 
-  return htmlWithMermaid
+  return html
 }

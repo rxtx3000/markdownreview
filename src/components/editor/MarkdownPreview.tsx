@@ -136,28 +136,31 @@ const MarkdownPreview = forwardRef<MarkdownPreviewRef, MarkdownPreviewProps>(
       const container = containerRef.current
       if (!container) return
 
-      const mermaidDivs = container.querySelectorAll<HTMLElement>('.mermaid-diagram')
-      if (mermaidDivs.length === 0) return
+      // Find code blocks with language-mermaid class (produced by remark for ```mermaid blocks)
+      const mermaidCodes = container.querySelectorAll<HTMLElement>('code.language-mermaid')
+      if (mermaidCodes.length === 0) return
 
       const mermaid = (await import('mermaid')).default
       mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'strict' })
 
-      for (const div of mermaidDivs) {
-        if (div.classList.contains('mermaid-rendered')) continue
+      for (const codeEl of mermaidCodes) {
+        const preEl = codeEl.parentElement
+        if (!preEl || preEl.tagName !== 'PRE') continue
+        if (preEl.classList.contains('mermaid-rendered')) continue
 
-        // Extract the mermaid source from the nested code block text
-        const codeEl = div.querySelector('pre.mermaid-source code')
-        const source = codeEl?.textContent?.trim()
+        const source = codeEl.textContent?.trim()
         if (!source) continue
 
         try {
           const id = `mermaid-${Math.random().toString(36).slice(2, 10)}`
           const { svg } = await mermaid.render(id, source)
-          div.innerHTML = svg
-          div.classList.add('mermaid-rendered')
+          // Replace the <pre> with a rendered diagram div
+          const wrapper = document.createElement('div')
+          wrapper.className = 'mermaid-diagram mermaid-rendered'
+          wrapper.innerHTML = svg
+          preEl.replaceWith(wrapper)
         } catch {
-          // Leave the code block as-is on parse error
-          div.classList.add('mermaid-error')
+          preEl.classList.add('mermaid-error')
         }
       }
     }, [])
