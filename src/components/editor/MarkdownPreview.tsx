@@ -141,7 +141,12 @@ const MarkdownPreview = forwardRef<MarkdownPreviewRef, MarkdownPreviewProps>(
       if (mermaidCodes.length === 0) return
 
       const mermaid = (await import('mermaid')).default
-      mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'strict' })
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'neutral',
+        securityLevel: 'strict',
+        fontFamily: 'sans-serif',
+      })
 
       for (const codeEl of mermaidCodes) {
         const preEl = codeEl.parentElement

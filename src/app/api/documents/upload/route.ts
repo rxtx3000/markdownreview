@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@/generated/prisma/client'
+import { prisma } from '@/lib/prisma'
 import { generateToken } from '@/lib/auth'
 import { AuthErrors } from '@/lib/auth/errors'
-
-const prisma = new PrismaClient()
 
 /**
  * Get the maximum upload size in bytes from environment variable.

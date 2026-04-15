@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@/generated/prisma/client'
+import { prisma } from '@/lib/prisma'
 import { generateToken } from '@/lib/auth'
-
-const prisma = new PrismaClient()
 
 /**
  * POST /api/documents

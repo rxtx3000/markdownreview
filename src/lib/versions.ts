@@ -1,6 +1,4 @@
-import { PrismaClient } from '@/generated/prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 /**
  * Automatically determines the next version number and creates a DocumentVersion snapshot.

@@ -23,11 +23,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@/generated/prisma/client'
+import { prisma } from '@/lib/prisma'
 import { requireOwner, createErrorResponse, AuthErrors } from '@/lib/auth'
 import { parseChanges } from '@/lib/criticmarkup'
-
-const prisma = new PrismaClient()
 
 interface RouteParams {
   params: Promise<{ id: string }>

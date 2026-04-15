@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@/generated/prisma/client'
+import { prisma } from '@/lib/prisma'
 import { hashToken } from './token'
 import { AuthErrors } from './errors'
 import { AuthContext, UserRole, ReviewerPermission } from './types'
-
-const prisma = new PrismaClient()
 
 /**
  * Extracts authentication token from query parameters.

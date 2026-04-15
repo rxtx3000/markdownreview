@@ -10,14 +10,12 @@
  * - Lock acquisition and release utilities
  */
 
-import { PrismaClient } from '@/generated/prisma/client'
+import { prisma } from '@/lib/prisma'
 import { AuthErrors } from '@/lib/auth'
 import { isLockExpired, LOCK_TIMEOUT_MS, LockResult } from './utils'
 
 // Re-export utilities for external use
 export { isLockExpired, LOCK_TIMEOUT_MS, type LockResult } from './utils'
-
-const prisma = new PrismaClient()
 
 /**
  * Acquires a document-level lock for editing.

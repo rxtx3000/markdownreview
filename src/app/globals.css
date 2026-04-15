@@ -277,11 +277,17 @@ body {
   margin: 1em 0;
   display: flex;
   justify-content: center;
+  background: #fff;
+  border-radius: 8px;
+  padding: 1em;
+  overflow: visible;
+  min-height: 50px;
 }
 
 .markdown-preview .mermaid-diagram.mermaid-rendered svg {
   max-width: 100%;
   height: auto;
+  display: block;
 }
 
 .markdown-preview .mermaid-diagram.mermaid-error pre {

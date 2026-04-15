@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@/generated/prisma/client'
+import { prisma } from '@/lib/prisma'
 import { authenticate, createErrorResponse, AuthErrors, UserRole } from '@/lib/auth'
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
@@ -8,8 +8,6 @@ import remarkRehype from 'remark-rehype'
 import rehypeRaw from 'rehype-raw'
 import rehypeStringify from 'rehype-stringify'
 import { preprocessCriticMarkup, remarkCriticMarkup } from '@/lib/criticmarkup'
-
-const prisma = new PrismaClient()
 
 interface RouteParams {
   params: Promise<{ id: string }>
