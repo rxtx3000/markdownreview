@@ -1,16 +1,83 @@
 'use client'
 
-import {
-  useState,
-  useEffect,
-  useRef,
-  forwardRef,
-  useImperativeHandle,
-  useMemo,
-  useCallback,
-} from 'react'
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react'
 import { renderMarkdown } from '@/lib/markdown-renderer'
 import type { CommentAnchor } from './CodeMirrorEditor'
+
+// Module-level mermaid singleton to avoid re-initialization
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let mermaidInstance: any = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let mermaidInitPromise: Promise<any> | null = null
+
+async function getMermaid() {
+  if (mermaidInstance) return mermaidInstance
+  if (mermaidInitPromise) return mermaidInitPromise
+
+  mermaidInitPromise = (async () => {
+    const mod = await import('mermaid')
+    const m = mod.default
+    m.initialize({
+      startOnLoad: false,
+      theme: 'neutral',
+      securityLevel: 'loose',
+      fontFamily: 'sans-serif',
+    })
+    mermaidInstance = m
+    return m
+  })()
+
+  return mermaidInitPromise
+}
+
+/**
+ * Render mermaid code blocks in an HTML string into SVG diagrams.
+ * Operates on the HTML string level — no React DOM manipulation needed.
+ */
+async function renderMermaidBlocks(html: string): Promise<string> {
+  if (typeof window === 'undefined') return html
+
+  // Match <pre><code class="language-mermaid">...source...</code></pre>
+  const mermaidRegex = /<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g
+
+  const matches = [...html.matchAll(mermaidRegex)]
+  if (matches.length === 0) return html
+
+  let mermaid
+  try {
+    mermaid = await getMermaid()
+  } catch (err) {
+    console.error('Failed to load mermaid:', err)
+    return html
+  }
+
+  let result = html
+  for (const match of matches) {
+    const fullMatch = match[0]
+    const encodedSource = match[1]
+
+    // Decode HTML entities using a temporary textarea
+    const textarea = document.createElement('textarea')
+    textarea.innerHTML = encodedSource
+    const source = textarea.value.trim()
+
+    if (!source) continue
+
+    try {
+      const id = `mermaid-${Math.random().toString(36).slice(2, 10)}`
+      const { svg } = await mermaid.render(id, source)
+      result = result.replace(
+        fullMatch,
+        `<div class="mermaid-diagram mermaid-rendered">${svg}</div>`
+      )
+    } catch (err) {
+      console.error('Mermaid diagram render error:', err)
+      // Leave the code block as-is on error so users still see the source
+    }
+  }
+
+  return result
+}
 
 export interface MarkdownPreviewProps {
   /** The raw markdown content to render */
@@ -110,7 +177,9 @@ const MarkdownPreview = forwardRef<MarkdownPreviewRef, MarkdownPreviewProps>(
       debounceRef.current = setTimeout(async () => {
         setRendering(true)
         try {
-          const rendered = await renderMarkdown(content)
+          let rendered = await renderMarkdown(content)
+          // Render mermaid code blocks into SVG before injecting into the DOM
+          rendered = await renderMermaidBlocks(rendered)
           setHtml(rendered)
         } catch {
           setHtml('<p class="text-red-500">Error rendering Markdown</p>')
@@ -130,49 +199,6 @@ const MarkdownPreview = forwardRef<MarkdownPreviewRef, MarkdownPreviewProps>(
     const highlightedHtml = useMemo(() => {
       return applyCommentHighlights(html, content, comments)
     }, [html, content, comments])
-
-    // Render Mermaid diagrams after HTML is injected into the DOM
-    const renderMermaidDiagrams = useCallback(async () => {
-      const container = containerRef.current
-      if (!container) return
-
-      // Find code blocks with language-mermaid class (produced by remark for ```mermaid blocks)
-      const mermaidCodes = container.querySelectorAll<HTMLElement>('code.language-mermaid')
-      if (mermaidCodes.length === 0) return
-
-      const mermaid = (await import('mermaid')).default
-      mermaid.initialize({
-        startOnLoad: false,
-        theme: 'neutral',
-        securityLevel: 'strict',
-        fontFamily: 'sans-serif',
-      })
-
-      for (const codeEl of mermaidCodes) {
-        const preEl = codeEl.parentElement
-        if (!preEl || preEl.tagName !== 'PRE') continue
-        if (preEl.classList.contains('mermaid-rendered')) continue
-
-        const source = codeEl.textContent?.trim()
-        if (!source) continue
-
-        try {
-          const id = `mermaid-${Math.random().toString(36).slice(2, 10)}`
-          const { svg } = await mermaid.render(id, source)
-          // Replace the <pre> with a rendered diagram div
-          const wrapper = document.createElement('div')
-          wrapper.className = 'mermaid-diagram mermaid-rendered'
-          wrapper.innerHTML = svg
-          preEl.replaceWith(wrapper)
-        } catch {
-          preEl.classList.add('mermaid-error')
-        }
-      }
-    }, [])
-
-    useEffect(() => {
-      renderMermaidDiagrams()
-    }, [highlightedHtml, renderMermaidDiagrams])
 
     return (
       <div className={`relative ${className}`}>
